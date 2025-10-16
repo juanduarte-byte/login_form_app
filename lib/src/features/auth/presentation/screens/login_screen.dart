@@ -1,3 +1,5 @@
+// lib/src/features/auth/presentation/screens/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/login_cubit.dart';
@@ -10,11 +12,27 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => LoginCubit(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Login'),
+      // --- CAMBIO: Envolvemos con BlocListener ---
+      child: BlocListener<LoginCubit, LoginState>(
+        listener: (context, state) {
+          if (state is LoginSuccess) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(content: Text('Login Successful!')),
+              );
+          } else if (state is LoginFailure) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(content: Text('Login Failed: ${state.error}')),
+              );
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Login')),
+          body: const LoginForm(),
         ),
-        body: const LoginForm(),
       ),
     );
   }
@@ -30,21 +48,25 @@ class LoginForm extends StatefulWidget {
 class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordObscured = true;
-
-  // --- CAMBIO 1: Declarar el FocusNode ---
   late final FocusNode _passwordFocusNode;
+
+  // --- CAMBIO: Añadir TextEditingControllers ---
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
 
   @override
   void initState() {
     super.initState();
-    // --- CAMBIO 2: Inicializar el FocusNode ---
     _passwordFocusNode = FocusNode();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
   }
 
   @override
   void dispose() {
-    // --- CAMBIO 3: Liberar el FocusNode para evitar fugas de memoria ---
     _passwordFocusNode.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -66,21 +88,18 @@ class _LoginFormState extends State<LoginForm> {
               child: Column(
                 children: <Widget>[
                   TextFormField(
+                    // --- CAMBIO: Conectar el controller ---
+                    controller: _emailController,
                     decoration: const InputDecoration(
                       labelText: 'Email Address',
                       border: OutlineInputBorder(),
                     ),
-                    // --- CAMBIO 4: Cambiar la acción del botón "Enter" del teclado ---
                     textInputAction: TextInputAction.next,
-                    // --- CAMBIO 5: Mover el foco al siguiente campo al presionar "Enter" ---
                     onFieldSubmitted: (_) {
                       FocusScope.of(context).requestFocus(_passwordFocusNode);
                     },
-                    // --- CAMBIO 6: Usar una validación más robusta con RegExp ---
                     validator: (value) {
-                      if (value == null ||
-                          !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
+                      if (value == null || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                         return 'Please enter a valid email';
                       }
                       return null;
@@ -88,18 +107,15 @@ class _LoginFormState extends State<LoginForm> {
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    // --- CAMBIO 7: Asignar el FocusNode al campo de contraseña ---
+                    // --- CAMBIO: Conectar el controller ---
+                    controller: _passwordController,
                     focusNode: _passwordFocusNode,
                     obscureText: _isPasswordObscured,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPasswordObscured
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
+                        icon: Icon(_isPasswordObscured ? Icons.visibility_off : Icons.visibility),
                         onPressed: () {
                           setState(() {
                             _isPasswordObscured = !_isPasswordObscured;
@@ -114,36 +130,21 @@ class _LoginFormState extends State<LoginForm> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
-                  BlocBuilder<LoginCubit, LoginState>(
-                    builder: (context, state) {
-                      return CheckboxListTile(
-                        title: const Text('Remember Me'),
-                        value: state.isRememberMeChecked,
-                        onChanged: (newValue) {
-                          context
-                              .read<LoginCubit>()
-                              .toggleRememberMe(newValue ?? false);
-                        },
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                      );
-                    },
-                  ),
+                  // --- CAMBIO: Eliminamos el CheckboxListTile ---
                   const SizedBox(height: 24),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor:
-                          Theme.of(context).colorScheme.onPrimary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
+                    // --- CAMBIO: La acción ahora llama al Cubit ---
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Processing Data...')),
-                        );
+                        context.read<LoginCubit>().login(
+                              _emailController.text,
+                              _passwordController.text,
+                            );
                       }
                     },
                     child: const Text('Login'),
