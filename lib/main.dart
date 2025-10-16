@@ -1,3 +1,5 @@
+// main.dart
+
 import 'package:flutter/material.dart';
 import 'src/features/auth/presentation/screens/login_screen.dart';
 
@@ -20,6 +22,10 @@ class MyApp extends StatelessWidget {
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           centerTitle: true,
+        ),
+        // --- CÓDIGO AÑADIDO ---
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
         ),
       ),
       home: const LoginScreen(),

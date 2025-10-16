@@ -1,7 +1,12 @@
+// lib/src/features/auth/presentation/screens/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/login_cubit.dart';
 import '../../application/login_state.dart';
+// --- CAMBIO: Importar los nuevos widgets ---
+import '../widgets/_email_form_field.dart';
+import '../widgets/_password_form_field.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -44,7 +49,6 @@ class LoginForm extends StatefulWidget {
 
 class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
-  bool _isPasswordObscured = true;
   late final FocusNode _passwordFocusNode;
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
@@ -82,65 +86,27 @@ class _LoginFormState extends State<LoginForm> {
               key: _formKey,
               child: Column(
                 children: <Widget>[
-                  TextFormField(
+                  // --- INICIA EL CAMBIO ---
+                  EmailFormField(
                     controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email Address',
-                      border: OutlineInputBorder(),
-                    ),
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) {
-                      FocusScope.of(context).requestFocus(_passwordFocusNode);
-                    },
-                    validator: (value) {
-                      if (value == null ||
-                          !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
+                    nextFocusNode: _passwordFocusNode,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  PasswordFormField(
                     controller: _passwordController,
                     focusNode: _passwordFocusNode,
-                    obscureText: _isPasswordObscured,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_isPasswordObscured
-                            ? Icons.visibility_off
-                            : Icons.visibility),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordObscured = !_isPasswordObscured;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
                   ),
+                  // --- TERMINA EL CAMBIO ---
                   const SizedBox(height: 24),
-                  // --- INICIA EL CAMBIO ---
                   BlocBuilder<LoginCubit, LoginState>(
                     builder: (context, state) {
                       final isLoading = state is LoginLoading;
                       return ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         ),
-                        // Deshabilitamos el botón si está cargando
                         onPressed: isLoading
                             ? null
                             : () {
@@ -151,7 +117,6 @@ class _LoginFormState extends State<LoginForm> {
                                       );
                                 }
                               },
-                        // Mostramos un spinner si está cargando, o el texto si no
                         child: isLoading
                             ? const SizedBox(
                                 height: 24,
@@ -165,7 +130,6 @@ class _LoginFormState extends State<LoginForm> {
                       );
                     },
                   ),
-                  // --- TERMINA EL CAMBIO ---
                 ],
               ),
             ),
