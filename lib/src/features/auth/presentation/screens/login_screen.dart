@@ -1,5 +1,3 @@
-// lib/src/features/auth/presentation/screens/login_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../application/login_cubit.dart';
@@ -12,7 +10,6 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => LoginCubit(),
-      // --- CAMBIO: Envolvemos con BlocListener ---
       child: BlocListener<LoginCubit, LoginState>(
         listener: (context, state) {
           if (state is LoginSuccess) {
@@ -49,8 +46,6 @@ class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordObscured = true;
   late final FocusNode _passwordFocusNode;
-
-  // --- CAMBIO: Añadir TextEditingControllers ---
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
 
@@ -88,7 +83,6 @@ class _LoginFormState extends State<LoginForm> {
               child: Column(
                 children: <Widget>[
                   TextFormField(
-                    // --- CAMBIO: Conectar el controller ---
                     controller: _emailController,
                     decoration: const InputDecoration(
                       labelText: 'Email Address',
@@ -99,7 +93,9 @@ class _LoginFormState extends State<LoginForm> {
                       FocusScope.of(context).requestFocus(_passwordFocusNode);
                     },
                     validator: (value) {
-                      if (value == null || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      if (value == null ||
+                          !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                              .hasMatch(value)) {
                         return 'Please enter a valid email';
                       }
                       return null;
@@ -107,7 +103,6 @@ class _LoginFormState extends State<LoginForm> {
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    // --- CAMBIO: Conectar el controller ---
                     controller: _passwordController,
                     focusNode: _passwordFocusNode,
                     obscureText: _isPasswordObscured,
@@ -115,7 +110,9 @@ class _LoginFormState extends State<LoginForm> {
                       labelText: 'Password',
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
-                        icon: Icon(_isPasswordObscured ? Icons.visibility_off : Icons.visibility),
+                        icon: Icon(_isPasswordObscured
+                            ? Icons.visibility_off
+                            : Icons.visibility),
                         onPressed: () {
                           setState(() {
                             _isPasswordObscured = !_isPasswordObscured;
@@ -130,25 +127,45 @@ class _LoginFormState extends State<LoginForm> {
                       return null;
                     },
                   ),
-                  // --- CAMBIO: Eliminamos el CheckboxListTile ---
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                    // --- CAMBIO: La acción ahora llama al Cubit ---
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        context.read<LoginCubit>().login(
-                              _emailController.text,
-                              _passwordController.text,
-                            );
-                      }
+                  // --- INICIA EL CAMBIO ---
+                  BlocBuilder<LoginCubit, LoginState>(
+                    builder: (context, state) {
+                      final isLoading = state is LoginLoading;
+                      return ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        // Deshabilitamos el botón si está cargando
+                        onPressed: isLoading
+                            ? null
+                            : () {
+                                if (_formKey.currentState!.validate()) {
+                                  context.read<LoginCubit>().login(
+                                        _emailController.text,
+                                        _passwordController.text,
+                                      );
+                                }
+                              },
+                        // Mostramos un spinner si está cargando, o el texto si no
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 3,
+                                ),
+                              )
+                            : const Text('Login'),
+                      );
                     },
-                    child: const Text('Login'),
                   ),
+                  // --- TERMINA EL CAMBIO ---
                 ],
               ),
             ),
