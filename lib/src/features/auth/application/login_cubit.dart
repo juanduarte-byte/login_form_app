@@ -22,4 +22,4 @@ class LoginCubit extends Cubit<LoginState> {
       emit(const LoginFailure(error: 'Invalid credentials. Try "123456"'));
     }
   }
-}
+} 
