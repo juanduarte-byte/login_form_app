@@ -31,6 +31,23 @@ class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordObscured = true;
 
+  // --- CAMBIO 1: Declarar el FocusNode ---
+  late final FocusNode _passwordFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    // --- CAMBIO 2: Inicializar el FocusNode ---
+    _passwordFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    // --- CAMBIO 3: Liberar el FocusNode para evitar fugas de memoria ---
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -53,8 +70,17 @@ class _LoginFormState extends State<LoginForm> {
                       labelText: 'Email Address',
                       border: OutlineInputBorder(),
                     ),
+                    // --- CAMBIO 4: Cambiar la acción del botón "Enter" del teclado ---
+                    textInputAction: TextInputAction.next,
+                    // --- CAMBIO 5: Mover el foco al siguiente campo al presionar "Enter" ---
+                    onFieldSubmitted: (_) {
+                      FocusScope.of(context).requestFocus(_passwordFocusNode);
+                    },
+                    // --- CAMBIO 6: Usar una validación más robusta con RegExp ---
                     validator: (value) {
-                      if (value == null || !value.contains('@')) {
+                      if (value == null ||
+                          !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                              .hasMatch(value)) {
                         return 'Please enter a valid email';
                       }
                       return null;
@@ -62,6 +88,8 @@ class _LoginFormState extends State<LoginForm> {
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
+                    // --- CAMBIO 7: Asignar el FocusNode al campo de contraseña ---
+                    focusNode: _passwordFocusNode,
                     obscureText: _isPasswordObscured,
                     decoration: InputDecoration(
                       labelText: 'Password',
@@ -107,12 +135,14 @@ class _LoginFormState extends State<LoginForm> {
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onPrimary,
                     ),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Processing Data...')),
+                          const SnackBar(
+                              content: Text('Processing Data...')),
                         );
                       }
                     },
